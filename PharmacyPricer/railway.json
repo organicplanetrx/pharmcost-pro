@@ -1,6 +1,6 @@
 {
   "build": {
-    "command": "npm run build"
+    "command": "npm ci --include=dev && npm run build"
   },
   "start": {
     "command": "npm run start"
