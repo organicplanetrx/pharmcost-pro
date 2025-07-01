@@ -1,9 +1,12 @@
 {
+  "name": "pharmcost-pro", 
+  "version": "1.0.0",
   "scripts": {
-    "build": "echo 'Build complete'",
-    "start": "node -e \"console.log('Server starting...'); const express = require('express'); const app = express(); app.get('/', (req, res) => res.json({status: 'ok'})); const port = process.env.PORT || 3000; app.listen(port, '0.0.0.0', () => console.log('Server running on port', port));\""
+    "build": "echo 'No build needed for CommonJS'",
+    "start": "NODE_ENV=production node server/index-cjs.js"
   },
   "dependencies": {
     "express": "^4.21.2"
+    // ... other dependencies
   }
 }
