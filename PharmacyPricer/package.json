@@ -2,7 +2,7 @@
   "name": "pharmcost-pro",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server/express-test.js"
+    "start": "node -e \"const express = require('express'); const app = express(); app.get('/', (req, res) => res.json({status: 'Railway Express working!', time: new Date()})); app.get('/api/vendors', (req, res) => res.json([{id: 1, name: 'McKesson'}, {id: 3, name: 'Kinray'}])); app.listen(process.env.PORT || 5000, '0.0.0.0', () => console.log('Express server running'));\""
   },
   "dependencies": {
     "express": "^4.21.2"
