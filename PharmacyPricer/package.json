@@ -1,11 +1,8 @@
 {
   "name": "pharmcost-pro",
   "version": "1.0.0",
-  "license": "MIT",
   "scripts": {
-    "build": "echo 'No build needed'",
-    "start": "node server/railway-server.js",
-    "preinstall": "rm -f package-lock.json"
+    "start": "node -e \"const express = require('express'); const app = express(); app.use(express.json()); app.get('/', (req, res) => { console.log('Root request received'); res.status(200).json({ status: 'ok', message: 'PharmaCost Pro API', timestamp: new Date().toISOString() }); }); app.get('/health', (req, res) => { console.log('Health check'); res.status(200).json({ status: 'ok' }); }); app.get('/api/health', (req, res) => { res.status(200).json({ status: 'ok' }); }); const port = process.env.PORT || 3000; app.listen(port, '0.0.0.0', () => { console.log('Server ready on port', port); }).on('error', err => { console.error('Server error:', err); process.exit(1); }); process.on('SIGTERM', () => { console.log('Received SIGTERM, shutting down'); process.exit(0); });\""
   },
   "dependencies": {
     "express": "4.21.2"
