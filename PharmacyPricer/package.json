@@ -1,16 +1,13 @@
 {
   "name": "pharmcost-pro",
   "version": "1.0.0",
-  "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "esbuild server/simple.ts --platform=node --bundle --format=esm --outdir=dist --external:express",
-    "start": "NODE_ENV=production node dist/simple.js",
+    "build": "echo 'No build needed'",
+    "start": "node server/railway-server.js",
     "preinstall": "rm -f package-lock.json"
   },
   "dependencies": {
-    "express": "4.21.2",
-    "esbuild": "0.25.0",
-    "typescript": "5.6.3"
+    "express": "4.21.2"
   }
 }
