@@ -476,17 +476,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Vendor not found" });
       }
 
-      // Check if we're in production environment
+      // Allow real connection testing when user provides actual credentials
       const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === 'true';
+      const allowRealTesting = username.length > 3 && password.length > 3; // Basic check for real credentials
       
       console.log(`Testing connection to ${vendor.name} at ${vendor.portalUrl}`);
-      console.log(`Environment: ${process.env.NODE_ENV}, Deployment: ${process.env.REPLIT_DEPLOYMENT}`);
+      console.log(`Environment: ${process.env.NODE_ENV}, Real Testing Allowed: ${allowRealTesting}`);
       
       let success = false;
       
-      if (isProduction) {
-        // Try real connection in production
+      if (isProduction || allowRealTesting) {
+        // Try real connection
         try {
+          console.log(`Attempting real login to ${vendor.name}...`);
           success = await scrapingService.login(vendor, {
             id: 0,
             vendorId,
@@ -495,13 +497,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isActive: true,
             lastValidated: null,
           });
-          console.log(`Production connection attempt: ${success ? 'SUCCESS' : 'FAILED'}`);
+          console.log(`Connection attempt result: ${success ? 'SUCCESS' : 'FAILED'}`);
         } catch (error) {
-          console.error('Production connection error:', error);
+          console.error('Connection error:', error);
           success = false;
         }
       } else {
-        console.log(`Development environment - simulating production behavior`);
+        console.log(`Development environment - need real credentials for testing`);
       }
 
       // Log activity
@@ -528,9 +530,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success, 
         message: success 
           ? `Connection successful - Ready to scrape ${vendor.name}` 
-          : isProduction 
-            ? `Connection failed - Unable to reach ${vendor.name} portal. Please check your credentials or contact support if the issue persists.`
-            : `Development environment: No external network access. In production with internet connectivity, this would connect to ${vendor.name} using your credentials.` 
+          : allowRealTesting
+            ? `Connection failed - Unable to login to ${vendor.name} portal. Please verify your credentials are correct.`
+            : `Please enter your actual ${vendor.name} credentials to test the real connection.` 
       });
     } catch (error) {
       console.error("Connection test failed:", error);
