@@ -214,41 +214,40 @@ export class PuppeteerScrapingService implements ScrapingService {
     if (!this.page) return false;
     
     try {
-      // Kinray typically has a login link/button on the homepage
-      console.log('Looking for Kinray login portal...');
+      console.log('Looking for Kinray login form...');
       
-      // Wait for page to load and look for login elements
+      // Wait for page to load
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Try to find login links or forms
-      const loginSelectors = [
-        'a[href*="login"]',
-        'a[href*="portal"]', 
-        'a[href*="signin"]',
-        '.login-link',
-        '.portal-login',
-        '#login-button',
-        'button:contains("Login")',
-        'input[type="submit"][value*="Login"]'
-      ];
+      // Check if we're already on the login page by looking for login form
+      const currentUrl = this.page.url();
+      console.log(`Current URL: ${currentUrl}`);
       
-      let loginElement = null;
-      for (const selector of loginSelectors) {
-        try {
-          loginElement = await this.page.$(selector);
-          if (loginElement) {
-            console.log(`Found login element with selector: ${selector}`);
-            break;
+      // If we're not on a login page, try to find and click login link
+      if (!currentUrl.includes('login') && !currentUrl.includes('signin')) {
+        console.log('Not on login page, looking for login link...');
+        
+        // Try to find login links
+        const loginSelectors = [
+          'a[href*="login"]', 'a[href*="portal"]', 'a[href*="signin"]',
+          '.login-link', '.portal-login', '#login-button'
+        ];
+        
+        for (const selector of loginSelectors) {
+          try {
+            const loginElement = await this.page.$(selector);
+            if (loginElement) {
+              console.log(`Found login link: ${selector}`);
+              await loginElement.click();
+              await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 });
+              break;
+            }
+          } catch (e) {
+            console.log(`Failed to click ${selector}, trying next...`);
           }
-        } catch (e) {
-          // Continue trying other selectors
         }
-      }
-      
-      // If we found a login link, click it
-      if (loginElement) {
-        await loginElement.click();
-        await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
+      } else {
+        console.log('Already on login page or login URL detected');
       }
       
       // Now look for username/password fields with more comprehensive selectors
