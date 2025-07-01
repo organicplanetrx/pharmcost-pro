@@ -1,12 +1,7 @@
 {
   "name": "pharmcost-pro",
   "version": "1.0.0",
-  "license": "MIT",
   "scripts": {
-    "build": "echo 'Build complete'",
-    "start": "node server/index-cjs.js"
-  },
-  "dependencies": {
-    "express": "^4.21.2"
+    "start": "node server/minimal-test.js"
   }
 }
