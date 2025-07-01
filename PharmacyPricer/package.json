@@ -1,12 +1,12 @@
 {
-  "name": "pharmcost-pro", 
+  "name": "pharmcost-pro",
   "version": "1.0.0",
+  "license": "MIT",
   "scripts": {
-    "build": "echo 'No build needed for CommonJS'",
-    "start": "NODE_ENV=production node server/index-cjs.js"
+    "build": "echo 'Build complete'",
+    "start": "node server/index-cjs.js"
   },
   "dependencies": {
     "express": "^4.21.2"
-    // ... other dependencies
   }
 }
