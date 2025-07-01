@@ -4,23 +4,13 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "esbuild server/production.ts --platform=node --bundle --format=esm --outdir=dist --external:puppeteer --external:@neondatabase/serverless --external:drizzle-orm --external:express --external:zod",
-    "start": "NODE_ENV=production node dist/production.js",
+    "build": "esbuild server/simple.ts --platform=node --bundle --format=esm --outdir=dist --external:express",
+    "start": "NODE_ENV=production node dist/simple.js",
     "preinstall": "rm -f package-lock.json"
   },
   "dependencies": {
-    "@neondatabase/serverless": "0.10.4",
     "express": "4.21.2",
-    "express-session": "1.18.1",
-    "connect-pg-simple": "10.0.0",
-    "drizzle-orm": "0.39.1",
-    "drizzle-zod": "0.7.0",
-    "puppeteer": "24.10.2",
-    "zod": "3.24.2",
-    "nanoid": "5.1.5",
-    "ws": "8.18.2",
     "esbuild": "0.25.0",
-    "tsx": "4.19.2",
     "typescript": "5.6.3"
   }
 }
