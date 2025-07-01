@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "vite build --config vite.config.railway.ts && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "NODE_ENV=production vite build --mode production && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js"
   },
   "dependencies": {
@@ -36,6 +36,8 @@
     "tsx": "4.19.2",
     "typescript": "5.6.3",
     "vite": "5.4.19",
-    "wouter": "3.3.5"
+    "wouter": "3.3.5",
+    "@replit/vite-plugin-runtime-error-modal": "1.0.0",
+    "@replit/vite-plugin-cartographer": "1.0.0"
   }
 }
