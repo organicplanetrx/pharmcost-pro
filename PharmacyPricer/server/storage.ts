@@ -86,7 +86,7 @@ export class MemStorage implements IStorage {
     const defaultVendors = [
       { name: "McKesson Connect", portalUrl: "https://connect.mckesson.com", isActive: true },
       { name: "Cardinal Health", portalUrl: "https://www.cardinalhealth.com", isActive: true },
-      { name: "Kinray (Cardinal Health)", portalUrl: "https://kinray.com/login", isActive: true },
+      { name: "Kinray (Cardinal Health)", portalUrl: "https://kinrayweblink.cardinalhealth.com/login", isActive: true },
       { name: "AmerisourceBergen", portalUrl: "https://www.amerisourcebergen.com", isActive: true },
       { name: "Morris & Dickson", portalUrl: "https://www.morrisanddickson.com", isActive: true },
     ];
