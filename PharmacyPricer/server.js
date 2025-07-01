@@ -428,7 +428,7 @@ app.get('/', (req, res) => {
             resultDiv.innerHTML = '<div class="loading">Testing connection...</div>';
             
             try {
-                const response = await fetch('/api/test-connection', {
+                const response = await fetch('/api/credentials/test-connection', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -576,26 +576,118 @@ app.get('/api/vendors', (req, res) => {
   res.json(vendors);
 });
 
-app.post('/api/search', (req, res) => {
-  const { searchTerm, vendorId } = req.body;
-  console.log(`Search request: ${searchTerm} on vendor ${vendorId}`);
+app.post('/api/search', async (req, res) => {
+  const { searchTerm, searchType, vendorId } = req.body;
+  console.log(`Search request: ${searchTerm} (${searchType}) on vendor ${vendorId}`);
   
   const searchId = Math.floor(Math.random() * 10000);
-  res.json({ searchId, status: 'started' });
+  
+  try {
+    // Store search in memory for results retrieval
+    global.activeSearches = global.activeSearches || {};
+    global.activeSearches[searchId] = {
+      searchTerm,
+      searchType,
+      vendorId: parseInt(vendorId),
+      status: 'in_progress',
+      results: []
+    };
+    
+    // Start background search process
+    performMedicationSearch(searchId, searchTerm, searchType, parseInt(vendorId));
+    
+    res.json({ searchId, status: 'started' });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Failed to start search' });
+  }
 });
 
-app.get('/api/search/:id/results', (req, res) => {
-  const results = [
-    {
-      id: 1,
-      ndc: '12345-678-90',
-      name: 'Sample Medication',
-      cost: '$15.99',
-      availability: 'In Stock',
-      vendor: 'Demo Vendor'
+async function performMedicationSearch(searchId, searchTerm, searchType, vendorId) {
+  try {
+    console.log(`Starting background search ${searchId} for: ${searchTerm}`);
+    
+    // Import scraping service
+    const { PuppeteerScrapingService } = require('./server/services/scraper.ts');
+    const scrapingService = new PuppeteerScrapingService();
+    
+    // Get stored credentials for this vendor (in real app, get from database)
+    const storedCredentials = global.vendorCredentials && global.vendorCredentials[vendorId];
+    
+    if (!storedCredentials) {
+      global.activeSearches[searchId].status = 'failed';
+      global.activeSearches[searchId].error = 'No credentials found for vendor. Please save credentials first.';
+      return;
     }
-  ];
-  res.json(results);
+    
+    const vendor = {
+      id: vendorId,
+      name: vendorId === 3 ? 'Kinray' : 'Other Vendor',
+      portalUrl: vendorId === 3 ? 'https://kinray.com' : 'https://example.com'
+    };
+    
+    // Login to vendor portal
+    console.log(`Logging in to ${vendor.name}...`);
+    const loginSuccess = await scrapingService.login(vendor, storedCredentials);
+    
+    if (!loginSuccess) {
+      global.activeSearches[searchId].status = 'failed';
+      global.activeSearches[searchId].error = 'Failed to login to vendor portal';
+      await scrapingService.cleanup();
+      return;
+    }
+    
+    // Perform medication search
+    console.log(`Searching for: ${searchTerm} (${searchType})`);
+    const results = await scrapingService.searchMedication(searchTerm, searchType);
+    
+    // Store results
+    global.activeSearches[searchId].status = 'completed';
+    global.activeSearches[searchId].results = results;
+    
+    await scrapingService.cleanup();
+    console.log(`Search ${searchId} completed with ${results.length} results`);
+    
+  } catch (error) {
+    console.error(`Search ${searchId} failed:`, error);
+    global.activeSearches[searchId].status = 'failed';
+    global.activeSearches[searchId].error = error.message;
+  }
+}
+
+app.get('/api/search/:id/results', (req, res) => {
+  const searchId = parseInt(req.params.id);
+  const search = global.activeSearches && global.activeSearches[searchId];
+  
+  if (!search) {
+    return res.status(404).json({ error: 'Search not found' });
+  }
+  
+  if (search.status === 'failed') {
+    return res.status(400).json({ 
+      error: search.error || 'Search failed',
+      status: 'failed'
+    });
+  }
+  
+  if (search.status === 'in_progress') {
+    return res.json({ 
+      status: 'in_progress',
+      message: 'Search is still running...',
+      results: []
+    });
+  }
+  
+  // Format results for frontend display
+  const formattedResults = search.results.map(result => ({
+    ndc: result.medication.ndcCode || 'N/A',
+    name: result.medication.name || 'Unknown',
+    cost: result.cost || 'N/A',
+    availability: result.availability || 'Unknown',
+    vendor: result.vendor || 'Unknown'
+  }));
+  
+  res.json(formattedResults);
 });
 
 // Dashboard stats endpoint
@@ -626,25 +718,66 @@ app.get('/api/activity', (req, res) => {
 });
 
 // Test connection endpoint
-app.post('/api/test-connection', (req, res) => {
+app.post('/api/test-connection', async (req, res) => {
   const { vendorId, username, password } = req.body;
   
   console.log(`Testing connection for vendor ${vendorId}: ${username}`);
   
-  // Simulate connection test
-  setTimeout(() => {
-    if (username && password && vendorId) {
+  if (!username || !password || !vendorId) {
+    return res.json({ 
+      success: false, 
+      message: 'Connection failed: Missing credentials.' 
+    });
+  }
+
+  try {
+    // Import the scraping service
+    const { PuppeteerScrapingService } = require('./server/services/scraper.ts');
+    const scrapingService = new PuppeteerScrapingService();
+    
+    // Create vendor and credential objects
+    const vendor = {
+      id: parseInt(vendorId),
+      name: vendorId === '3' ? 'Kinray' : 'Other Vendor',
+      portalUrl: vendorId === '3' ? 'https://kinray.com' : 'https://example.com'
+    };
+    
+    const credential = {
+      id: 1,
+      vendorId: parseInt(vendorId),
+      username,
+      password,
+      rememberCredentials: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    console.log('Attempting real login to vendor portal...');
+    
+    // Test actual login
+    const loginSuccess = await scrapingService.login(vendor, credential);
+    
+    if (loginSuccess) {
+      await scrapingService.cleanup();
       res.json({ 
         success: true, 
-        message: 'Connection test successful! Credentials are valid.' 
+        message: 'Connection successful! Successfully logged into vendor portal.' 
       });
     } else {
+      await scrapingService.cleanup();
       res.json({ 
         success: false, 
-        message: 'Connection failed: Invalid credentials or missing information.' 
+        message: 'Connection failed: Invalid credentials or portal unavailable.' 
       });
     }
-  }, 1500); // Simulate network delay
+    
+  } catch (error) {
+    console.error('Connection test error:', error);
+    res.json({ 
+      success: false, 
+      message: `Connection failed: ${error.message}` 
+    });
+  }
 });
 
 // Save credentials endpoint
@@ -653,10 +786,23 @@ app.post('/api/credentials', (req, res) => {
   
   console.log(`Saving credentials for vendor ${vendorId}: ${username}`);
   
-  // In a real app, you'd save these securely to a database
+  // Store credentials in memory for use in searches
+  global.vendorCredentials = global.vendorCredentials || {};
+  global.vendorCredentials[parseInt(vendorId)] = {
+    id: Date.now(),
+    vendorId: parseInt(vendorId),
+    username,
+    password,
+    rememberCredentials,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
+  
+  console.log(`Credentials stored for vendor ${vendorId}`);
+  
   res.json({ 
     success: true, 
-    message: 'Credentials saved successfully' 
+    message: 'Credentials saved successfully and ready for medication searches!' 
   });
 });
 
