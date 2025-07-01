@@ -2,6 +2,9 @@
   "name": "pharmcost-pro",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server/minimal-test.js"
+    "start": "node server/express-test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
   }
 }
