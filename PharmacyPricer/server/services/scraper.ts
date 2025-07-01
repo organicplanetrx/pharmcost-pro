@@ -214,175 +214,108 @@ export class PuppeteerScrapingService implements ScrapingService {
     if (!this.page) return false;
     
     try {
-      console.log('Looking for Kinray login form...');
+      console.log('Attempting Kinray login...');
       
       // Wait for page to load
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Check if we're already on the login page by looking for login form
-      const currentUrl = this.page.url();
-      console.log(`Current URL: ${currentUrl}`);
+      const pageUrl = this.page.url();
+      console.log(`Current URL: ${pageUrl}`);
       
-      // If we're not on a login page, try to find and click login link
-      if (!currentUrl.includes('login') && !currentUrl.includes('signin')) {
-        console.log('Not on login page, looking for login link...');
-        
-        // Try to find login links
-        const loginSelectors = [
-          'a[href*="login"]', 'a[href*="portal"]', 'a[href*="signin"]',
-          '.login-link', '.portal-login', '#login-button'
-        ];
-        
-        for (const selector of loginSelectors) {
-          try {
-            const loginElement = await this.page.$(selector);
-            if (loginElement) {
-              console.log(`Found login link: ${selector}`);
-              await loginElement.click();
-              await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 });
-              break;
-            }
-          } catch (e) {
-            console.log(`Failed to click ${selector}, trying next...`);
-          }
-        }
-      } else {
-        console.log('Already on login page or login URL detected');
-      }
-      
-      // Now look for username/password fields with more comprehensive selectors
+      // Simple form field detection and filling
       const usernameSelectors = [
-        '#username', '#userID', '#user', '#email', 
         'input[name="username"]', 'input[name="user"]', 'input[name="email"]',
-        'input[type="text"]', 'input[type="email"]',
-        '.username-field', '.user-input'
+        '#username', '#user', '#email', 'input[type="text"]'
       ];
       
       const passwordSelectors = [
-        '#password', '#pass', '#pwd',
-        'input[name="password"]', 'input[name="pass"]',
-        'input[type="password"]',
-        '.password-field', '.pass-input'
+        'input[name="password"]', 'input[name="pass"]', 
+        '#password', '#pass', 'input[type="password"]'
       ];
       
-      let usernameField = null;
-      let passwordField = null;
+      let usernameFound = false;
+      let passwordFound = false;
       
-      // Find username field
+      // Try to find and fill username
       for (const selector of usernameSelectors) {
         try {
-          await this.page.waitForSelector(selector, { timeout: 2000 });
-          usernameField = await this.page.$(selector);
-          if (usernameField) {
+          const field = await this.page.$(selector);
+          if (field) {
             console.log(`Found username field: ${selector}`);
+            await field.type(credential.username);
+            usernameFound = true;
             break;
           }
         } catch (e) {
-          // Continue trying
+          continue;
         }
       }
       
-      // Find password field
+      // Try to find and fill password
       for (const selector of passwordSelectors) {
         try {
-          await this.page.waitForSelector(selector, { timeout: 2000 });
-          passwordField = await this.page.$(selector);
-          if (passwordField) {
+          const field = await this.page.$(selector);
+          if (field) {
             console.log(`Found password field: ${selector}`);
+            await field.type(credential.password);
+            passwordFound = true;
             break;
           }
         } catch (e) {
-          // Continue trying
+          continue;
         }
       }
       
-      if (!usernameField || !passwordField) {
-        console.log('Could not find login form fields');
-        
-        // Log current page info for debugging
-        const url = this.page.url();
-        const title = await this.page.title();
-        console.log(`Current page: ${url} - ${title}`);
-        
-        // Take a screenshot for debugging (optional)
-        // await this.page.screenshot({ path: 'kinray-debug.png' });
-        
+      if (!usernameFound || !passwordFound) {
+        console.log(`Login fields found: username=${usernameFound}, password=${passwordFound}`);
+        console.log('Portal accessible but login form differs from expected structure');
         return false;
       }
       
-      // Clear fields and enter credentials
-      await usernameField.click({ clickCount: 3 }); // Select all
-      await usernameField.type(credential.username);
-      
-      await passwordField.click({ clickCount: 3 }); // Select all
-      await passwordField.type(credential.password);
-      
-      console.log('Credentials entered, looking for submit button...');
-      
-      // Find and click submit button
+      // Try to submit the form
       const submitSelectors = [
         'button[type="submit"]', 'input[type="submit"]',
-        '#loginButton', '#login-btn', '.login-button',
         'button:contains("Login")', 'button:contains("Sign In")',
-        '.submit-btn', '.btn-login'
+        '.login-btn', '.submit-btn'
       ];
       
-      let submitButton = null;
+      let submitSuccess = false;
       for (const selector of submitSelectors) {
         try {
-          submitButton = await this.page.$(selector);
-          if (submitButton) {
+          const button = await this.page.$(selector);
+          if (button) {
             console.log(`Found submit button: ${selector}`);
+            await button.click();
+            submitSuccess = true;
             break;
           }
         } catch (e) {
-          // Continue trying
+          continue;
         }
       }
       
-      if (!submitButton) {
-        // Try pressing Enter on password field as fallback
+      if (!submitSuccess) {
+        // Try Enter key as fallback
         console.log('No submit button found, trying Enter key');
-        await passwordField.press('Enter');
-      } else {
-        await submitButton.click();
+        await this.page.keyboard.press('Enter');
       }
       
-      // Wait for navigation or response
+      // Wait for navigation
       try {
-        await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
+        await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 });
       } catch (e) {
-        console.log('Navigation timeout, checking current page...');
+        console.log('Navigation timeout, checking page...');
       }
       
-      // Check for successful login indicators
-      const successSelectors = [
-        '.portal-content', '.kinray-portal', '.main-content',
-        '.dashboard', '.user-dashboard', '.portal-home',
-        '.welcome', '.account-info', '.logout'
-      ];
-      
-      for (const selector of successSelectors) {
-        try {
-          const element = await this.page.$(selector);
-          if (element) {
-            console.log(`Login successful - found element: ${selector}`);
-            return true;
-          }
-        } catch (e) {
-          // Continue checking
-        }
+      // Check if login was successful
+      const finalUrl = this.page.url();
+      if (!finalUrl.includes('login') && !finalUrl.includes('signin')) {
+        console.log('Login appears successful - redirected away from login page');
+        return true;
       }
       
-      // Check if we're still on login page (indicates failure)
-      const currentUrl = this.page.url();
-      if (currentUrl.includes('login') || currentUrl.includes('signin')) {
-        console.log('Still on login page, login likely failed');
-        return false;
-      }
-      
-      console.log('Login status uncertain, assuming success');
-      return true;
+      console.log('Login form interaction completed but success uncertain');
+      return false;
       
     } catch (error) {
       console.error('Kinray login error:', error);
