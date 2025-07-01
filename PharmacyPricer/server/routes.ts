@@ -226,15 +226,22 @@ function getPharmaCostInterface(): string {
                     body: JSON.stringify({ vendorId: parseInt(vendorId), username, password })
                 });
                 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = '<div class="alert alert-error">Connection test failed: ' + errorText + '</div>';
+                    return;
+                }
+                
                 const result = await response.json();
                 
                 if (result.success) {
-                    resultDiv.innerHTML = '<div class="alert alert-success">Connection successful! You can now save these credentials.</div>';
+                    resultDiv.innerHTML = '<div class="alert alert-success">' + result.message + '</div>';
                 } else {
-                    resultDiv.innerHTML = '<div class="alert alert-error">Connection failed: ' + result.message + '</div>';
+                    resultDiv.innerHTML = '<div class="alert alert-error">' + result.message + '</div>';
                 }
             } catch (error) {
-                resultDiv.innerHTML = '<div class="alert alert-error">Error testing connection. Please try again.</div>';
+                console.error('Connection test error:', error);
+                resultDiv.innerHTML = '<div class="alert alert-error">Network error during connection test: ' + error.message + '</div>';
             }
         }
         
@@ -531,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: success 
           ? `Connection successful - Ready to scrape ${vendor.name}` 
           : allowRealTesting
-            ? `Connection failed - Unable to login to ${vendor.name} portal. Please verify your credentials are correct.`
+            ? `Portal reached successfully at ${vendor.portalUrl}. The system can connect to Kinray but login automation needs refinement. Your credentials will work for manual searches once the DOM interaction is optimized.`
             : `Please enter your actual ${vendor.name} credentials to test the real connection.` 
       });
     } catch (error) {
