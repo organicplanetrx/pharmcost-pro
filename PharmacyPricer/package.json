@@ -4,7 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "echo 'Production server build' && esbuild server/production.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "esbuild server/production.ts --platform=node --bundle --format=esm --outdir=dist --external:puppeteer --external:@neondatabase/serverless --external:drizzle-orm --external:express --external:zod",
     "start": "NODE_ENV=production node dist/production.js",
     "preinstall": "rm -f package-lock.json"
   },
