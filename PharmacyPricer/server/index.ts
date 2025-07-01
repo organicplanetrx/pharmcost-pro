@@ -2,9 +2,27 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Add process error handlers to catch uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+console.log('🚀 Starting PharmaCost Pro server...');
+console.log('Environment:', process.env.NODE_ENV);
+console.log('Port:', process.env.PORT || '5000');
+
 const app = express();
+console.log('✓ Express app created');
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+console.log('✓ Express middleware configured');
 
 app.use((req, res, next) => {
   const start = Date.now();
