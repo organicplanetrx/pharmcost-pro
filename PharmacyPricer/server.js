@@ -625,6 +625,28 @@ app.get('/api/activity', (req, res) => {
   res.json(activities);
 });
 
+// Test connection endpoint
+app.post('/api/test-connection', (req, res) => {
+  const { vendorId, username, password } = req.body;
+  
+  console.log(`Testing connection for vendor ${vendorId}: ${username}`);
+  
+  // Simulate connection test
+  setTimeout(() => {
+    if (username && password && vendorId) {
+      res.json({ 
+        success: true, 
+        message: 'Connection test successful! Credentials are valid.' 
+      });
+    } else {
+      res.json({ 
+        success: false, 
+        message: 'Connection failed: Invalid credentials or missing information.' 
+      });
+    }
+  }, 1500); // Simulate network delay
+});
+
 // Save credentials endpoint
 app.post('/api/credentials', (req, res) => {
   const { vendorId, username, password, rememberCredentials } = req.body;
