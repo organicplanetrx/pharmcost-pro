@@ -220,19 +220,25 @@ function getPharmaCostInterface(): string {
             resultDiv.innerHTML = '<div class="loading">Testing connection...</div>';
             
             try {
-                const response = await fetch('/api/credentials/test-connection', {
+                console.log('Testing connection with:', { vendorId: parseInt(vendorId), username: username.substring(0,3) + '***' });
+                
+                const response = await fetch('/api/credentials/test-connection?t=' + Date.now(), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ vendorId: parseInt(vendorId), username, password })
                 });
                 
+                console.log('Response status:', response.status, 'OK:', response.ok);
+                
                 if (!response.ok) {
                     const errorText = await response.text();
+                    console.log('Error response text:', errorText);
                     resultDiv.innerHTML = '<div class="alert alert-error">Connection test failed: ' + errorText + '</div>';
                     return;
                 }
                 
                 const result = await response.json();
+                console.log('Result received:', result);
                 
                 if (result.success) {
                     resultDiv.innerHTML = '<div class="alert alert-success">' + result.message + '</div>';
@@ -240,8 +246,8 @@ function getPharmaCostInterface(): string {
                     resultDiv.innerHTML = '<div class="alert alert-error">' + result.message + '</div>';
                 }
             } catch (error) {
-                console.error('Connection test error:', error);
-                resultDiv.innerHTML = '<div class="alert alert-error">Network error during connection test: ' + error.message + '</div>';
+                console.error('Connection test error details:', error);
+                resultDiv.innerHTML = '<div class="alert alert-error">JavaScript error: ' + error.message + '</div>';
             }
         }
         
@@ -390,6 +396,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve frontend interface
   app.get("/", (req, res) => {
     res.send(getPharmaCostInterface());
+  });
+
+  // Serve test debug page
+  app.get("/test", (req, res) => {
+    const fs = require('fs');
+    const testHtml = fs.readFileSync('./test-connection.html', 'utf8');
+    res.send(testHtml);
   });
 
   // Vendors endpoints
