@@ -1,24 +1,13 @@
 {
   "name": "pharmcost-pro",
   "version": "1.0.0",
-  "description": "Pharmacy wholesale vendor price comparison application",
-  "main": "server/render-server.js",
   "scripts": {
-    "start": "node server/render-server.js",
-    "dev": "npm run start",
-    "build": "echo 'Build complete'"
+    "start": "node server/render-server.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.4",
-    "express": "^4.21.2",
-    "express-session": "^1.18.1",
-    "connect-pg-simple": "^10.0.0",
-    "puppeteer": "^23.9.0",
-    "drizzle-orm": "^0.36.4",
-    "zod": "^3.24.1",
-    "nanoid": "^5.0.9"
+    "express": "^4.21.2"
   },
   "engines": {
-    "node": ">=18"
+    "node": "18"
   }
 }
