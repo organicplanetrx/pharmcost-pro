@@ -300,21 +300,52 @@ export class PuppeteerScrapingService implements ScrapingService {
         await this.page.keyboard.press('Enter');
       }
       
-      // Wait for navigation
+      // Wait for navigation with better timeout handling
+      let navigationSuccess = false;
       try {
-        await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 10000 });
+        await this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 8000 });
+        navigationSuccess = true;
+        console.log('Navigation completed successfully');
       } catch (e) {
-        console.log('Navigation timeout, checking page...');
+        console.log('Navigation timeout - checking current page status...');
       }
+      
+      // Wait a bit more for page to settle
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Check if login was successful
       const finalUrl = this.page.url();
+      console.log(`Final URL after login attempt: ${finalUrl}`);
+      
+      // Check for success indicators
       if (!finalUrl.includes('login') && !finalUrl.includes('signin')) {
-        console.log('Login appears successful - redirected away from login page');
+        console.log('Login successful - redirected away from login page');
         return true;
       }
       
-      console.log('Login form interaction completed but success uncertain');
+      // Check for dashboard or main content
+      try {
+        const dashboardElement = await this.page.$('.dashboard, .main-content, .home, [class*="main"], [class*="dashboard"]');
+        if (dashboardElement) {
+          console.log('Login successful - found dashboard elements');
+          return true;
+        }
+      } catch (e) {
+        console.log('No dashboard elements found');
+      }
+      
+      // Check for error messages
+      try {
+        const errorElement = await this.page.$('.error, .alert-danger, [class*="error"], [class*="invalid"]');
+        if (errorElement) {
+          const errorText = await errorElement.evaluate(el => el.textContent);
+          console.log(`Login error detected: ${errorText}`);
+        }
+      } catch (e) {
+        console.log('No error elements found');
+      }
+      
+      console.log('Login attempt completed - credentials may be invalid or portal structure changed');
       return false;
       
     } catch (error) {
