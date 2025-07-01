@@ -1,0 +1,8 @@
+[phases.build]
+cmds = ["echo 'Build phase'"]
+
+[phases.install]
+cmds = ["echo 'Install phase'"]
+
+[start]
+cmd = "node server/http-server.js"
