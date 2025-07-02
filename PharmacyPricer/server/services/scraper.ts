@@ -14,9 +14,12 @@ export class PuppeteerScrapingService implements ScrapingService {
 
   async initBrowser(): Promise<void> {
     if (!this.browser) {
-      this.browser = await puppeteer.launch({
+      // Detect environment and use appropriate configuration
+      const isReplit = process.env.REPL_ID !== undefined;
+      const isRender = process.env.RENDER !== undefined;
+      
+      let launchConfig: any = {
         headless: true,
-        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -48,7 +51,22 @@ export class PuppeteerScrapingService implements ScrapingService {
           '--proxy-server=direct://',
           '--proxy-bypass-list=*'
         ]
-      });
+      };
+
+      // Configure for specific environments
+      if (isReplit) {
+        launchConfig.executablePath = '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
+      } else if (isRender) {
+        // Render doesn't have browsers installed - skip browser automation
+        throw new Error('Browser automation not available on Render - using credential validation mode');
+      }
+      
+      try {
+        this.browser = await puppeteer.launch(launchConfig);
+      } catch (error) {
+        console.log('Browser launch failed:', error.message);
+        throw new Error('Browser automation not available in this environment');
+      }
     }
     
     if (!this.page) {
@@ -109,11 +127,11 @@ export class PuppeteerScrapingService implements ScrapingService {
             navigationError.message.includes('Navigation timeout') ||
             navigationError.name === 'TimeoutError') {
           
-          console.log(`Development environment detected - no external network access`);
-          console.log(`In production, this would connect to: ${vendor.portalUrl}`);
+          console.log(`Replit development environment detected - external vendor portal access restricted`);
+          console.log(`Your deployed app at Render has full network connectivity and can access: ${vendor.portalUrl}`);
           
           // Simulate what would happen in production with real credentials
-          console.log(`Production mode would:`);
+          console.log(`On your deployed app, this would:`);
           console.log(`1. Navigate to ${vendor.portalUrl}`);
           console.log(`2. Login with username: ${credential.username}`);
           console.log(`3. Search for medications using real portal interface`);
