@@ -112,7 +112,7 @@ server.listen(port, '0.0.0.0', () => {
   // Test internal connectivity
   setTimeout(() => {
     const testReq = http.request({
-      hostname: 'localhost',
+      hostname: '127.0.0.1',  // Use IPv4 explicitly
       port: port,
       path: '/health',
       method: 'GET'
@@ -152,5 +152,5 @@ process.on('SIGTERM', () => {
 
 // Keep alive
 setInterval(() => {
-  console.log('Server heartbeat - uptime:', process.uptime(), 'seconds');
+  console.log('Server heartbeat');
 }, 60000);
